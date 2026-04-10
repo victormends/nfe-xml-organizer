@@ -1,0 +1,4 @@
+organized/
+test-output/
+*.log
+*.tmp

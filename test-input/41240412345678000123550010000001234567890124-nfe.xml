@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe41240412345678000123550010000001234567890124" versao="4.00">
+      <ide>
+        <cUF>41</cUF>
+        <dhEmi>2024-04-02T08:00:00-03:00</dhEmi>
+      </ide>
+      <emit>
+        <CNPJ>12345678000123</CNPJ>
+        <xNome>Emitente A</xNome>
+      </emit>
+      <dest>
+        <CNPJ>11222333000144</CNPJ>
+        <xNome>Destinatario B</xNome>
+      </dest>
+    </infNFe>
+  </NFe>
+</nfeProc>
