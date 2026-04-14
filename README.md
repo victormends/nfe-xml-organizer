@@ -86,6 +86,7 @@ powershell -ExecutionPolicy Bypass -File .\organize-nfe-xml.ps1 `
 - `-GroupBy emit|dest` : group by emitter CNPJ or recipient CNPJ
 - `-Copy` : copy instead of move
 - `-DryRun` : print the target structure without changing files
+- `-Recurse` : search for XML files in subdirectories of the source folder
 
 ---
 
@@ -94,7 +95,7 @@ powershell -ExecutionPolicy Bypass -File .\organize-nfe-xml.ps1 `
 The script extracts:
 
 - emitter CNPJ from `emit/CNPJ`
-- recipient CNPJ from `dest/CNPJ`
+- recipient CNPJ or CPF from `dest/CNPJ` or `dest/CPF`
 - issue date from `ide/dhEmi` or `ide/dEmi`
 - access key from `infNFe/@Id` or the file name fallback
 
@@ -112,4 +113,5 @@ This folder includes sample XML files under `test-input/` so you can run the scr
 
 - The script does not validate the full NF-e schema.
 - It is designed to be practical for file organization, not fiscal validation.
+- When grouping by recipient (`-GroupBy dest`), both CNPJ and CPF are supported.
 - If a file is missing the required CNPJ or month information, it is skipped and reported.

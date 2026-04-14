@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35240600112233000199550010000009991234567899" versao="4.00">
+      <ide>
+        <cUF>35</cUF>
+        <dhEmi>2024-06-10T14:00:00-03:00</dhEmi>
+      </ide>
+      <emit>
+        <CNPJ>00112233000199</CNPJ>
+        <xNome>Emitente NoNS</xNome>
+      </emit>
+      <dest>
+        <CNPJ>77665544000188</CNPJ>
+        <xNome>Destinatario NoNS</xNome>
+      </dest>
+    </infNFe>
+  </NFe>
+</nfeProc>

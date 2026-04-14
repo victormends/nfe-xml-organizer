@@ -11,7 +11,8 @@ param(
     [string]$GroupBy = 'emit',
 
     [switch]$Copy,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$Recurse
 )
 
 Set-StrictMode -Version Latest
@@ -30,7 +31,13 @@ function Get-FirstNodeValue {
     )
 
     foreach ($xpath in $XPathCandidates) {
-        $node = $XmlDocument.SelectSingleNode($xpath, $NamespaceManager)
+        try {
+            $node = $XmlDocument.SelectSingleNode($xpath, $NamespaceManager)
+        }
+        catch [System.Xml.XPath.XPathException] {
+            continue
+        }
+
         if ($node -and $node.InnerText) {
             $value = $node.InnerText.Trim()
             if ($value) {
@@ -84,6 +91,7 @@ function Get-YearMonthFromAccessKey {
 
     $yy = $AccessKey.Substring(2, 2)
     $mm = $AccessKey.Substring(4, 2)
+    # NF-e access keys encode the year with two digits; assume 20xx.
     return "20$yy-$mm"
 }
 
@@ -111,6 +119,11 @@ function Get-NfeMetadata {
     $destCnpj = Get-FirstNodeValue -XmlDocument $xmlDoc -NamespaceManager $ns -XPathCandidates @(
         '//nfe:dest/nfe:CNPJ',
         '//dest/CNPJ'
+    )
+
+    $destCpf = Get-FirstNodeValue -XmlDocument $xmlDoc -NamespaceManager $ns -XPathCandidates @(
+        '//nfe:dest/nfe:CPF',
+        '//dest/CPF'
     )
 
     $issueDate = Get-FirstNodeValue -XmlDocument $xmlDoc -NamespaceManager $ns -XPathCandidates @(
@@ -141,6 +154,7 @@ function Get-NfeMetadata {
     return [pscustomobject]@{
         EmitCnpj = $emitCnpj
         DestCnpj = $destCnpj
+        DestCpf = $destCpf
         AccessKey = $accessKey
         IssueDate = $issueDate
         YearMonth = $yearMonth
@@ -155,12 +169,22 @@ if (-not (Test-Path $OutputDirectory) -and -not $DryRun) {
     New-Item -ItemType Directory -Path $OutputDirectory | Out-Null
 }
 
-$files = Get-ChildItem -Path $SourceDirectory -File -Filter '*.xml' | Sort-Object Name
+$getChildItemParams = @{
+    Path = $SourceDirectory
+    File = $true
+    Filter = '*.xml'
+}
+if ($Recurse) {
+    $getChildItemParams.Recurse = $true
+}
+
+$files = Get-ChildItem @getChildItemParams | Sort-Object Name
 if (-not $files) {
     Write-Warn 'No XML files found in source directory.'
     exit 0
 }
 
+$totalFiles = $files.Count
 $processed = 0
 $skipped = 0
 
@@ -175,8 +199,12 @@ foreach ($file in $files) {
     }
 
     $cnpj = if ($GroupBy -eq 'emit') { $meta.EmitCnpj } else { $meta.DestCnpj }
+    if (-not $cnpj -and $GroupBy -eq 'dest') {
+        $cnpj = $meta.DestCpf
+    }
+
     if (-not $cnpj) {
-        Write-Warn "$($file.Name): missing $GroupBy CNPJ. Skipping."
+        Write-Warn "$($file.Name): missing $GroupBy CNPJ/CPF. Skipping."
         $skipped++
         continue
     }
@@ -196,25 +224,38 @@ foreach ($file in $files) {
         continue
     }
 
-    if (-not (Test-Path $targetDir)) {
-        New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
-    }
+    try {
+        if (-not (Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+        }
 
-    if ($Copy) {
-        Copy-Item -Path $file.FullName -Destination $targetPath -Force
-        Write-Ok "$($file.Name): copied to $targetDir"
-    }
-    else {
-        Move-Item -Path $file.FullName -Destination $targetPath -Force
-        Write-Ok "$($file.Name): moved to $targetDir"
-    }
+        if (Test-Path $targetPath) {
+            Write-Warn "$($file.Name): target already exists, overwriting -> $targetPath"
+        }
 
-    $processed++
+        if ($Copy) {
+            Copy-Item -Path $file.FullName -Destination $targetPath -Force
+            Write-Ok "$($file.Name): copied to $targetDir"
+        }
+        else {
+            Move-Item -Path $file.FullName -Destination $targetPath -Force
+            Write-Ok "$($file.Name): moved to $targetDir"
+        }
+
+        $processed++
+    }
+    catch {
+        Write-Bad "$($file.Name): $($_.Exception.Message)"
+        $skipped++
+    }
 }
 
+$modeLabel = if ($DryRun) { 'dry-run' } elseif ($Copy) { 'copy' } else { 'move' }
+
 Write-Host "`n============================================================" -ForegroundColor Cyan
+Write-Host "Total     : $totalFiles" -ForegroundColor DarkGray
 Write-Host "Processed : $processed" -ForegroundColor Green
 Write-Host "Skipped   : $skipped" -ForegroundColor $(if ($skipped -gt 0) { 'Yellow' } else { 'Green' })
-Write-Host "Mode      : $(if ($Copy) { 'copy' } else { 'move' })" -ForegroundColor DarkGray
+Write-Host "Mode      : $modeLabel" -ForegroundColor DarkGray
 Write-Host "Grouped by: $GroupBy" -ForegroundColor DarkGray
 Write-Host "============================================================" -ForegroundColor Cyan
