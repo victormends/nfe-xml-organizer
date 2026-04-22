@@ -1,28 +1,53 @@
 # nfe-xml-organizer
 
-A small PowerShell utility to organize NF-e XML files from a mixed folder into:
+NF-e XML files from different companies and different issue months can easily accumulate in the same folder over time. Before those files are handed off for accounting work, they often need to be separated by CNPJ and month in a way that is consistent and easy to verify.
+
+This PowerShell script handles that step by reading each XML, extracting the emitter or recipient CNPJ, determining the issue month, and then moving or copying the file into the expected folder structure.
+
+The result is a deterministic organization rule based on document metadata instead of manual sorting.
 
 ```text
 <CNPJ>/<YYYY-MM>/
 ```
 
-The script reads each XML, extracts the emitter or recipient CNPJ, determines the issue month, and then moves or copies the file into the correct folder structure.
+It reads CNPJ data from the XML itself, uses the issue date when available, and only falls back to the access key in the file name when the month cannot be determined from the XML.
 
-This is useful when a single export folder contains XML files for multiple companies and multiple months.
+## Example
+
+Before:
+
+```text
+mixed/
+  41240312345678000123550010000001234567890123-nfe.xml
+  41240412345678000123550010000001234567890124-nfe.xml
+  35240555443322000199550010000004561234567890-nfe.xml
+```
+
+After:
+
+```text
+organized/
+  12345678000123/
+    2024-03/
+      41240312345678000123550010000001234567890123-nfe.xml
+    2024-04/
+      41240412345678000123550010000001234567890124-nfe.xml
+  55443322000199/
+    2024-05/
+      35240555443322000199550010000004561234567890-nfe.xml
+```
 
 ## Why This Exists
 
-This script came from a simple operational problem.
+This script came from a practical workflow problem.
 
-In a real workflow, XML files from different companies and different issue months had been accumulating in the same folder over time. Before those files could be handed off for accounting work, someone had to separate them by CNPJ and month.
+XML files from different companies and different issue months had been accumulating in the same folder over time. Before they could be handed off for accounting work, they had to be separated by CNPJ and month.
 
-That sorting was being done manually, which created an avoidable risk: placing XML files under the wrong company or the wrong period. For fiscal documents, that kind of mistake is easy to make and annoying to verify afterward.
-
-This utility was built to make that step deterministic. Instead of relying on manual sorting, the script reads the metadata from each XML and places the file in the expected folder structure with the same rule every time.
+Doing that manually created an obvious risk: placing XML files under the wrong company or the wrong period. This utility standardizes that step by using the document metadata to decide where each file belongs.
 
 ---
 
-## Assumptions
+## Input Assumptions
 
 - files are NF-e XML documents
 - file names follow the common pattern:
@@ -36,7 +61,7 @@ This utility was built to make that step deterministic. Instead of relying on ma
 
 ---
 
-## Folder Structure Produced
+## Output Structure
 
 If grouping by emitter CNPJ:
 
