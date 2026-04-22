@@ -10,6 +10,16 @@ The script reads each XML, extracts the emitter or recipient CNPJ, determines th
 
 This is useful when a single export folder contains XML files for multiple companies and multiple months.
 
+## Why This Exists
+
+This script came from a simple operational problem.
+
+In a real workflow, XML files from different companies and different issue months had been accumulating in the same folder over time. Before those files could be handed off for accounting work, someone had to separate them by CNPJ and month.
+
+That sorting was being done manually, which created an avoidable risk: placing XML files under the wrong company or the wrong period. For fiscal documents, that kind of mistake is easy to make and annoying to verify afterward.
+
+This utility was built to make that step deterministic. Instead of relying on manual sorting, the script reads the metadata from each XML and places the file in the expected folder structure with the same rule every time.
+
 ---
 
 ## Assumptions
